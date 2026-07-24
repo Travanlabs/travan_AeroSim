@@ -1,0 +1,851 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║          TRAVAN AERO SIMULATOR v2.0 — DEPLOYMENT & USER MANUAL             ║
+║          Professional Aerospace Analysis Suite — ARAeS Edition             ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Author  : Dickson Tawiah Aman, BEng (Aerospace, 1st Class), ARAeS         ║
+║  Company : Travan Engineering / RhoPhi Holdings (UK & Ghana)               ║
+║  Node    : 20.20.2   npm : 10.8.2   Electron : 29   Vite : 5              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TABLE OF CONTENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1.  System Requirements
+  2.  Project Structure
+  3.  Quick Start (3 commands)
+  4.  Full Installation — Step by Step
+  5.  Development Mode
+  6.  Production Build
+  7.  Packaging as Windows Installer (.exe)
+  8.  Packaging as Portable .exe
+  9.  macOS .dmg Build
+  10. Linux AppImage / .deb Build
+  11. Environment Variables & Configuration
+  12. Application Architecture
+  13. Simulation Modules — Engineering Detail
+  14. Geometry Import (STL / OBJ / Assembly)
+  15. Viewport & Camera System
+  16. Keyboard Shortcuts
+  17. Report Generation & Export
+  18. Troubleshooting
+  19. Engineering References & Standards
+  20. Licence & Contact
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. SYSTEM REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  REQUIRED (build machine):
+  ┌─────────────────────────────────────────────────────────┐
+  │  Node.js   : 20.20.2  (exact target; ≥20.x acceptable) │
+  │  npm       : 10.8.2   (exact target; ≥10.x acceptable) │
+  │  OS        : Windows 10/11, macOS 12+, Ubuntu 20.04+   │
+  │  RAM       : 4 GB minimum (8 GB recommended)           │
+  │  Disk      : 1.5 GB (node_modules + Electron binary)   │
+  └─────────────────────────────────────────────────────────┘
+
+  END-USER RUNTIME (installed application):
+  ┌─────────────────────────────────────────────────────────┐
+  │  OS        : Windows 10/11 x64 (primary target)        │
+  │  RAM       : 4 GB minimum                              │
+  │  Disk      : 350 MB installed                          │
+  │  Display   : 1280×720 minimum, 1920×1080 recommended   │
+  │  GPU       : Any with hardware-accelerated Canvas2D    │
+  │  No Node.js required on end-user machine               │
+  └─────────────────────────────────────────────────────────┘
+
+  VERIFY YOUR ENVIRONMENT:
+    node --version    → should print v20.20.2 (or v20.x.x)
+    npm --version     → should print 10.8.2 (or 10.x.x)
+
+  INSTALL CORRECT NODE VERSION (if needed):
+    Using nvm (recommended):
+      nvm install 20.20.2
+      nvm use 20.20.2
+
+    Using fnm (Windows):
+      fnm install 20.20.2
+      fnm use 20.20.2
+
+    Direct download: https://nodejs.org/en/download
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. PROJECT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  travan-aero-simulator/
+  ├── package.json                   ← Project config, scripts, build targets
+  ├── vite.config.js                 ← Renderer build config (Vite 5)
+  ├── .npmrc                         ← npm flags (legacy-peer-deps etc.)
+  ├── assets/
+  │   ├── icon.png                   ← 256×256 application icon
+  │   ├── LICENSE.txt                ← Licence text for NSIS installer
+  │   └── installer.nsh              ← NSIS branding header
+  ├── src/
+  │   ├── main/
+  │   │   └── main.js                ← Electron main process
+  │   │                                 (window creation, menus, IPC, dialogs)
+  │   ├── preload/
+  │   │   └── preload.js             ← contextBridge secure API
+  │   └── renderer/                  ← React UI (Vite root)
+  │       ├── index.html             ← HTML entry point
+  │       ├── main.jsx               ← React DOM root
+  │       └── src/
+  │           ├── App.jsx            ← Root component, state, simulation runner
+  │           ├── styles/
+  │           │   └── globals.css    ← Design tokens, global styles
+  │           ├── engines/
+  │           │   ├── atmosphere.js  ← ISA model (ICAO Doc 7488)
+  │           │   ├── aerodynamics.js← Panel method CFD, polar sweep
+  │           │   ├── fea.js         ← E-B beam FEA, box spar, flutter
+  │           │   ├── mach.js        ← Mcrit, normal/oblique shock
+  │           │   └── geometry.js    ← STL/OBJ/JSON parser + renderer
+  │           └── components/
+  │               ├── TitleBar.jsx   ← Top bar with live coefficient chips
+  │               ├── Sidebar.jsx    ← Icon navigation rail
+  │               ├── LeftPanel.jsx  ← All 6 parameter modules
+  │               ├── Viewport.jsx   ← Canvas 3D renderer (all views)
+  │               ├── RightPanel.jsx ← Results, alerts, log tabs
+  │               ├── StatusBar.jsx  ← Bottom status bar
+  │               ├── SimOverlay.jsx ← Simulation progress modal
+  │               ├── ReportModal.jsx← 8-section performance report
+  │               └── ManualModal.jsx← In-app user manual
+  └── dist/                          ← Built renderer (generated by vite build)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. QUICK START (3 COMMANDS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  From inside the travan-aero-simulator/ directory:
+
+    npm install                # Install all dependencies (~60 seconds)
+    npm run build              # Compile React renderer (~5 seconds)
+    npm start                  # Launch the desktop application
+
+  That's it. The window opens immediately.
+
+  To build a distributable Windows installer:
+    npm run dist               # → dist-electron/TravanAeroSimulator-2.0.0-Setup.exe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. FULL INSTALLATION — STEP BY STEP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  STEP 1 — Verify Node and npm versions
+  ──────────────────────────────────────
+    node --version
+    # Expected: v20.20.2 or any v20.x
+    npm --version
+    # Expected: 10.8.2 or any 10.x
+
+  STEP 2 — Extract the project
+  ─────────────────────────────
+    # Windows (PowerShell)
+    Expand-Archive travan-aero-simulator.zip -DestinationPath C:\Projects\
+    cd C:\Projects\travan-aero-simulator
+
+    # macOS / Linux
+    unzip travan-aero-simulator.zip
+    cd travan-aero-simulator
+
+  STEP 3 — Install dependencies
+  ──────────────────────────────
+    npm install
+
+    # This installs:
+    #   react, react-dom         ← UI framework
+    #   electron 29              ← Desktop runtime
+    #   vite 5, @vitejs/plugin-react  ← Build tool
+    #   electron-builder 24      ← Packager/installer generator
+    #   electron-store           ← Persistent settings storage
+    #   electron-log             ← File logging
+    #   concurrently, wait-on    ← Dev tooling
+
+    # If you see ERESOLVE errors, run:
+    npm install --legacy-peer-deps
+
+    # Expected output: "added 486 packages"
+
+  STEP 4 — Build the renderer
+  ─────────────────────────────
+    npm run build
+
+    # Expected output:
+    #   ✓ 45 modules transformed.
+    #   dist/index.html   1.00 kB
+    #   dist/assets/*.js  241 kB
+    #   ✓ built in ~2s
+
+  STEP 5 — Launch the application
+  ────────────────────────────────
+    npm start
+
+    # The Travan Aero Simulator window opens (1680×980 default).
+    # A development DevTools window opens if you are in dev mode.
+
+  STEP 6 (optional) — Run in full dev mode with hot reload
+  ─────────────────────────────────────────────────────────
+    npm run dev
+    # Starts Vite dev server on localhost:5173 AND Electron simultaneously.
+    # Changes to any .jsx/.js file rebuild and reflect live.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. DEVELOPMENT MODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    npm run dev
+
+  This uses concurrently to:
+    1. Start the Vite dev server (hot-module replacement on port 5173)
+    2. Wait for the server to be ready
+    3. Launch Electron pointing at http://localhost:5173
+
+  DevTools open automatically in detached mode.
+
+  Hot reload: edit any file in src/renderer/src/ → browser refreshes.
+  Electron IPC: edit src/main/main.js → requires npm run dev restart.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. PRODUCTION BUILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    npm run build
+
+  Output: dist/
+    dist/index.html
+    dist/assets/index-[hash].js    ← Minified React app (~241 kB)
+    dist/assets/index-[hash].css   ← Compiled styles
+
+  Then launch the production build:
+    npm start
+  (Electron loads dist/index.html when app.isPackaged = false)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. PACKAGING AS WINDOWS INSTALLER (.exe)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IMPORTANT: Must be run on Windows (or in a Windows VM / CI).
+  Cross-compilation from macOS/Linux requires Wine — not recommended.
+
+  COMMAND:
+    npm run dist
+
+  This runs:  npm run build  then  electron-builder --win --publish never
+
+  OUTPUT (in dist-electron/):
+    TravanAeroSimulator-2.0.0-Setup.exe    ← NSIS installer (recommended)
+    TravanAeroSimulator-2.0.0.exe          ← Portable (no install needed)
+
+  INSTALLER FEATURES (NSIS):
+    • Custom welcome screen with TAS branding
+    • User can choose installation directory
+    • Creates Desktop shortcut
+    • Creates Start Menu entry: "Travan Aero Simulator"
+    • Clean uninstaller included
+    • Per-user installation (no admin rights needed by default)
+    • Licence agreement screen (assets/LICENSE.txt)
+
+  INSTALLER SIZE:
+    Expected: ~120–150 MB (Electron runtime bundled)
+
+  DISTRIBUTE:
+    Share TravanAeroSimulator-2.0.0-Setup.exe.
+    Double-click to install. Runs on any Windows 10/11 x64 machine.
+    No Node.js required on the target machine.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. PORTABLE .exe (NO INSTALL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  The portable build is included automatically with npm run dist.
+  It creates a self-contained .exe that runs from any folder or USB drive.
+
+  TravanAeroSimulator-2.0.0.exe  ← portable, no installation required
+
+  To build ONLY the portable version:
+    npx electron-builder --win portable --publish never
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. macOS .dmg BUILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Must be run on macOS (Apple Silicon or Intel).
+
+    npm run build
+    npm run dist:mac
+
+  OUTPUT: dist-electron/TravanAeroSimulator-2.0.0.dmg
+
+  Code signing (for distribution outside App Store):
+    export CSC_LINK=/path/to/certificate.p12
+    export CSC_KEY_PASSWORD=your_password
+    npm run dist:mac
+
+  For notarisation (required for Gatekeeper on macOS 10.15+):
+    export APPLE_ID=your@apple.id
+    export APPLE_APP_SPECIFIC_PASSWORD=xxxx-xxxx-xxxx
+    # Add notarize hook to package.json build config as needed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. LINUX AppImage / .deb BUILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Run on Ubuntu 20.04+ or Debian 11+.
+
+    npm run build
+    npm run dist:linux
+
+  OUTPUT:
+    dist-electron/TravanAeroSimulator-2.0.0.AppImage    ← portable, any distro
+    dist-electron/travan-aero-simulator_2.0.0_amd64.deb ← Debian/Ubuntu package
+
+  Install .deb:
+    sudo dpkg -i travan-aero-simulator_2.0.0_amd64.deb
+
+  Run AppImage:
+    chmod +x TravanAeroSimulator-2.0.0.AppImage
+    ./TravanAeroSimulator-2.0.0.AppImage
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. ENVIRONMENT VARIABLES & CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Variable                        Purpose
+  ──────────────────────────────  ──────────────────────────────────────────
+  ELECTRON_SKIP_BINARY_DOWNLOAD   Set to 1 to skip downloading Electron
+                                  binary during npm install (useful in
+                                  restricted networks — binary sourced
+                                  separately). Already set in .npmrc.
+
+  NODE_ENV                        "development" → DevTools open automatically
+                                  "production"  → DevTools hidden, optimised
+
+  DEBUG                           Set to "electron:*" for verbose Electron
+                                  process logging.
+
+  LOG LOCATION (production):
+    Windows : %USERPROFILE%\AppData\Roaming\travan-aero-simulator\logs\
+    macOS   : ~/Library/Logs/travan-aero-simulator/
+    Linux   : ~/.config/travan-aero-simulator/logs/
+
+  SETTINGS / STORE:
+    electron-store persists user preferences in:
+    Windows : %APPDATA%\travan-aero-simulator\config.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. APPLICATION ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PROCESS MODEL:
+  ┌───────────────────────────────────────────────────────────────┐
+  │  MAIN PROCESS (Node.js / Electron)    src/main/main.js        │
+  │  ─────────────────────────────────────────────────────        │
+  │  • BrowserWindow creation & lifecycle                         │
+  │  • Native menu (File, Simulation, View, Help)                 │
+  │  • IPC handlers: save/open/export dialogs                     │
+  │  • electron-log (file + console logging)                      │
+  │  • Shell integration (open files in OS viewer)                │
+  └───────────────────┬───────────────────────────────────────────┘
+                      │  contextBridge (preload.js)
+                      │  Secure IPC — no nodeIntegration in renderer
+                      ▼
+  ┌───────────────────────────────────────────────────────────────┐
+  │  RENDERER PROCESS (Chromium / React)                          │
+  │  ─────────────────────────────────────────────────────        │
+  │  App.jsx ──→ all state, simulation orchestration              │
+  │    │                                                          │
+  │    ├── Sidebar.jsx       ← Navigation rail                    │
+  │    ├── TitleBar.jsx      ← Live coefficient chips             │
+  │    ├── LeftPanel.jsx     ← All 6 parameter modules            │
+  │    │     └── STL import  ← parseGeometryFile() engine         │
+  │    ├── Viewport.jsx      ← Canvas2D 3D renderer               │
+  │    │     ├── Single view (3D / Top / Side / Front)            │
+  │    │     ├── Quad split view                                  │
+  │    │     └── Imported geometry painter's-algo renderer        │
+  │    ├── RightPanel.jsx    ← Cp chart, drag pie, stress sparkline│
+  │    ├── StatusBar.jsx     ← Metrics bar                        │
+  │    ├── SimOverlay.jsx    ← Progress modal                     │
+  │    ├── ReportModal.jsx   ← 8-section report + TXT export      │
+  │    └── ManualModal.jsx   ← In-app user manual                 │
+  │                                                               │
+  │  ENGINES (pure JS, no external deps):                         │
+  │    atmosphere.js    ← ISA model                               │
+  │    aerodynamics.js  ← Panel method + lifting line             │
+  │    fea.js           ← Euler-Bernoulli beam FEA                │
+  │    mach.js          ← Shock wave solver                       │
+  │    geometry.js      ← STL/OBJ/JSON parser & renderer          │
+  └───────────────────────────────────────────────────────────────┘
+
+  SECURITY MODEL:
+    • nodeIntegration: false      (renderer cannot access Node APIs)
+    • contextIsolation: true      (preload runs in isolated context)
+    • sandbox: false              (needed for preload file access)
+    • webSecurity: true           (no cross-origin requests)
+    • All IPC via contextBridge — no direct require('electron') in renderer
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. SIMULATION MODULES — ENGINEERING DETAIL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ── ATMOSPHERE (atmosphere.js) ────────────────────────────────────────────
+  Standard: ICAO Doc 7488 / ISO 2533
+  Troposphere (0–11,000 m):
+    T   = T0 − L·h               T0=288.15K, L=0.0065 K/m
+    P   = P0·(T/T0)^(g/RL)
+    ρ   = P/(R·T)                R = 287.058 J/(kg·K)
+  Stratosphere (>11,000 m):
+    T   = 216.65 K (isothermal)
+    P   = P11·exp(−g·Δh/R·T)
+  Viscosity: Sutherland's law (μ accurate to 0.1% over 200–600 K)
+  Outputs: T, P, ρ, a (speed of sound), μ, ν
+
+  ── AERODYNAMICS (aerodynamics.js) ───────────────────────────────────────
+  Method: Vortex-lattice / lifting-line with Prandtl-Glauert correction
+
+  Compressibility:
+    β = √(1 − M²)                Prandtl-Glauert factor
+
+  Lift curve slope (Helmbold):
+    a_wing = (2π/β) / (1 + 2cosΛ/(AR·β))
+
+  Lift coefficient:
+    CL = a_wing · (α − αL0)     αL0 from airfoil database
+
+  Oswald efficiency (Raymer correlation):
+    e = 1.78·(1 − 0.045·AR^0.68) − 0.64, corrected for sweep & taper
+
+  Induced drag:
+    CDi = CL² / (π·AR·e)
+
+  Profile drag (Raymer empirical):
+    Cf  = 0.074 / Re^0.2        turbulent flat-plate
+    CD0 = Cf·(1 + 2·t/c + 60·(t/c)⁴)·S_wet/S
+
+  Fuselage drag:
+    CD_fuse = 0.0025 + 0.15/f²   f = fineness ratio L/D
+
+  Pressure distribution:
+    Chordwise Cp(x/c) from thin-aerofoil theory (linear, per station)
+    Upper/lower surfaces resolved for Cp chart
+
+  Stall estimate:
+    CLmax = 1.2 + 0.12·(t/c)/0.12 + 0.05·camber·50
+
+  ── STRUCTURAL FEA (fea.js) ──────────────────────────────────────────────
+  Model: Euler-Bernoulli cantilever beam + thin-walled closed box spar
+  Load:  Elliptic spanwise lift distribution (conservative for FAR/CS-25)
+
+  Section properties per spanwise station (taper-varying):
+    I = 2·b_cap·t_f·(h/2)² + 2·(t_w·h³/12)    [area moment]
+    A_shear = 2·h·t_w                           [shear area]
+
+  Bending moment (elliptic load, analytical):
+    M(y) = (2L/πs)·s²·[√(1−u²)/2 − u·(π/2−arcsin u)/2 + ...]
+    where u = y/s
+
+  Stress:
+    σ_bend = M·(h/2) / I        bending stress at extreme fibre
+    τ      = V / A_shear        shear stress in web
+    σ_VM   = √(σ² + 3τ²)       Von Mises criterion
+
+  Deflection: double numerical integration of M/EI (trapezoidal rule)
+
+  Safety factor: SF = σ_yield / σ_VM_max
+  Flutter speed: empirical Bisplinghoff approximation
+
+  ── MACH / SHOCK (mach.js) ───────────────────────────────────────────────
+  Critical Mach (Küchemann + sweep correction):
+    Mcc   = 1 / (1 + 0.6·t/c + 0.3·camber)
+    Mcrit = Mcc · cos(Λ)
+
+  Normal shock relations (γ = 1.4):
+    p2/p1  = 1 + 2γ/(γ+1)·(M1²−1)
+    T2/T1  = (p2/p1)·[2+(γ−1)M1²] / [(γ+1)M1²]
+    M2     = √[(M1²(γ−1)/2+1) / (γM1²−(γ−1)/2)]
+    p0 recovery = Rayleigh Pitot formula
+
+  Oblique shock: theta-beta-M relation, Newton's method iteration
+
+  Prandtl-Meyer expansion:
+    ν(M) = √((γ+1)/(γ−1))·arctan√((γ−1)(M²−1)/(γ+1)) − arctan√(M²−1)
+
+  Wave drag rise (Lock approximation):
+    ΔCD = 20·(M − Mcrit)⁴
+
+  ── POLAR SWEEP ──────────────────────────────────────────────────────────
+  Sweeps AoA from αmin to αmax in 0.5° steps.
+  Full aerodynamic solve at each step.
+  Finds best L/D angle and CLmax angle.
+  Results tabulated in left panel.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. GEOMETRY IMPORT (STL / OBJ / ASSEMBLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  SUPPORTED FORMATS:
+  ┌──────────┬────────────────────────────────────────────────────┐
+  │  .stl    │ ASCII STL and Binary STL                           │
+  │  .obj    │ Wavefront OBJ with polygon faces (auto-triangulated)│
+  │  .json   │ TAS Assembly JSON (see format below)              │
+  │  .asm    │ Alias for Assembly JSON                            │
+  └──────────┴────────────────────────────────────────────────────┘
+
+  HOW TO IMPORT:
+    1. Click "📎 IMPORT STL / OBJ" in the Design left panel
+    2. Browse and select your geometry file
+    3. TAS parses the mesh, normalises it to ±4 unit bounding cube
+    4. Geometric features are extracted (span, chord, t/c, S_ref, AR)
+    5. Parameters auto-populate in the left panel
+    6. Review extracted values and adjust if needed
+    7. Run simulation normally — solver uses the extracted parameters
+
+  PIPELINE:
+    File → Parse triangles → Normalise to simulator space →
+    Extract bbox & dimensions → Compute aero features →
+    Painter's-algorithm renderer (depth-sorted faces, Phong lighting)
+
+  CAD TOOL STL EXPORT GUIDE:
+  ┌─────────────────┬──────────────────────────────────────────────────┐
+  │  SolidWorks     │ File → Save As → STL (*.stl)                     │
+  │  CATIA V5       │ File → Save As → STL                             │
+  │  Siemens NX     │ File → Export → STL                              │
+  │  Fusion 360     │ File → Export → Format: STL                      │
+  │  FreeCAD        │ File → Export → *.stl                            │
+  │  Blender        │ File → Export → Stl (.stl)                       │
+  │  ANSYS SpaceClaim│ File → Save As → STL                            │
+  │  OpenVSP        │ File → Export → STL                              │
+  └─────────────────┴──────────────────────────────────────────────────┘
+
+  TAS ASSEMBLY JSON FORMAT:
+    {
+      "name": "MyWingAssembly",
+      "components": [
+        {
+          "name": "Wing",
+          "vertices": [x0,y0,z0, x1,y1,z1, ...],
+          "triangles": [0,1,2, 1,2,3, ...]
+        },
+        {
+          "name": "Fuselage",
+          "vertices": [...],
+          "triangles": [...]
+        }
+      ]
+    }
+
+  COORDINATE SYSTEM:
+    +X  ← forward (nose direction)
+    +Y  ← up
+    +Z  ← spanwise (starboard)
+    Units: metres preferred. TAS normalises regardless.
+
+  PERFORMANCE NOTES:
+    < 10,000 triangles   : Real-time rendering at 60 FPS
+    10,000–50,000 tri    : Smooth at 30–60 FPS
+    > 50,000 triangles   : May drop below 30 FPS.
+                           Decimate in Blender/MeshLab first:
+                           Blender: Modifier → Decimate → set Ratio 0.1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. VIEWPORT & CAMERA SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CAMERA CONTROLS:
+    Mouse drag        Rotate model (yaw + pitch)
+    Scroll wheel      Zoom in / out (0.2× to 6× range)
+    ⟳ RESET button    Return to default camera for current view
+
+  VIEW PRESETS:
+  ┌────────────┬────────────────────────────────────────────────────┐
+  │  3D VIEW   │ Perspective — rx=0.32, ry=0.52, ortho=false        │
+  │  TOP       │ Orthographic — plan view (XZ plane, from above)    │
+  │  SIDE      │ Orthographic — side elevation (XY plane)           │
+  │  FRONT     │ Orthographic — head-on view (YZ plane)             │
+  │  QUAD      │ 4-pane: Perspective + Top + Front + Side           │
+  └────────────┴────────────────────────────────────────────────────┘
+
+  In orthographic views, the projection uses parallel rays (no foreshortening).
+  In perspective view, field-of-view = 5.5 units (engineering-scale).
+
+  COLOUR MODES (change with sidebar navigation):
+  ┌────────────┬────────────────────────────────────────────────────┐
+  │  DESIGN    │ Solid blue panels, gold spar line, fuselage outline │
+  │  AIRFLOW   │ Cp pressure heatmap + animated streamlines         │
+  │  FEA       │ Von Mises stress heatmap + deflected spar dots     │
+  │  MACH      │ Mach zone colouring + red shock front lines        │
+  │  W&B       │ Same as Design (no field overlay needed)           │
+  │  POLAR     │ Same as Design                                     │
+  └────────────┴────────────────────────────────────────────────────┘
+
+  COLOUR SCALE (heat map — all field views):
+    BLUE → GREEN → YELLOW → RED  =  low → high
+    Displayed in viewport toolbar legend when active.
+
+  COORDINATE AXES (bottom-left corner):
+    Red   = X axis (fuselage length / forward)
+    Green = Y axis (vertical / up)
+    Blue  = Z axis (spanwise / starboard)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. KEYBOARD SHORTCUTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FILE:
+    Ctrl+N          New design (reset to defaults)
+    Ctrl+O          Open design file (.tas / .json)
+    Ctrl+S          Save design as .tas file
+    Ctrl+E          Export performance report
+
+  SIMULATION:
+    F5              Run full simulation (all solvers)
+    F6              Run airflow solver only
+    F7              Run FEA solver only
+    F8              Run Mach/shock analysis only
+    F9              Open polar sweep module
+
+  VIEW:
+    Ctrl+1          3D perspective view
+    Ctrl+2          Top view (plan)
+    Ctrl+3          Side view (elevation)
+    Ctrl+4          Front view (head-on)
+    Ctrl+Q          Toggle quad view
+    F11             Toggle full screen
+
+  ZOOM (viewport):
+    Scroll Up       Zoom in
+    Scroll Down     Zoom out
+
+  HELP:
+    Opens manual from Help menu
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. REPORT GENERATION & EXPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  HOW TO GENERATE:
+    1. Run at least one full simulation (F5)
+    2. Click 📄 REPORT in the sidebar, or Ctrl+E
+    3. The performance report modal opens
+
+  REPORT SECTIONS:
+    1. Performance Scorecard   (0–100 score + letter grade)
+    2. Aerodynamic Coefficients table
+    3. Flow Conditions (ISA atmosphere parameters)
+    4. Mach / Compressibility Analysis
+    5. Structural FEA summary
+    6. Weight & Balance
+    7. Design Recommendations (HIGH / MED / LOW priority)
+    8. Engineering disclaimer
+
+  SCORING:
+    L/D efficiency          up to 40 pts    (target L/D > 14 = full marks)
+    Structural safety (SF)  up to 30 pts    (SF > 4.0 = full marks)
+    Drag optimisation       up to 20 pts    (CD < 0.02 = full marks)
+    Compressibility margin  up to 10 pts    (M < Mcrit = full marks)
+
+  EXPORT (TXT):
+    Click "⬇ EXPORT TXT" → native Save dialog appears
+    File saved as TAS_Report_YYYY-MM-DD.txt
+    Structured plain text, importable into Word / Excel / any editor
+
+  EXPORT (PDF):
+    With the report modal open: Ctrl+P → Save as PDF
+    Browser print engine renders the modal exactly as styled.
+
+  SAVE DESIGN:
+    File → Save Design (Ctrl+S)
+    Saves all parameters as design.tas (JSON format)
+    Share with colleagues — they can open with File → Open Design
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ── INSTALLATION ISSUES ───────────────────────────────────────────────────
+
+  PROBLEM: npm install fails with ERESOLVE
+  SOLUTION:
+    npm install --legacy-peer-deps
+
+  PROBLEM: Electron binary fails to download (403 / network timeout)
+  SOLUTION:
+    # Skip binary download during npm install:
+    ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install --legacy-peer-deps
+    # Then download Electron v29 manually from:
+    # https://github.com/electron/electron/releases/tag/v29.1.0
+    # Extract and place electron.exe in node_modules/electron/dist/
+
+  PROBLEM: node: command not found
+  SOLUTION:
+    Install Node.js 20.20.2 from https://nodejs.org
+    Or use nvm: nvm install 20.20.2 && nvm use 20.20.2
+
+  PROBLEM: vite build fails — "Cannot find module"
+  SOLUTION:
+    rm -rf node_modules dist
+    npm install --legacy-peer-deps
+    npm run build
+
+  PROBLEM: ERESOLVE peer dependency conflict (React version)
+  SOLUTION:
+    npm install --legacy-peer-deps --force
+
+  ── RUNTIME ISSUES ────────────────────────────────────────────────────────
+
+  PROBLEM: App window opens blank / white screen
+  SOLUTION:
+    1. Run npm run build first before npm start
+    2. Check that dist/index.html exists
+    3. Open DevTools (Ctrl+Shift+I) and check Console for errors
+
+  PROBLEM: 3D viewport is black / not rendering
+  SOLUTION:
+    • Enable hardware acceleration in Electron:
+      In main.js, add before app.whenReady():
+        app.commandLine.appendSwitch('enable-accelerated-2d-canvas')
+    • Update graphics drivers
+    • Try: View → Force Reload (Ctrl+R)
+
+  PROBLEM: STL import fails — "contains no valid geometry"
+  SOLUTION:
+    • Verify the file is not corrupt: open in MeshLab or Blender
+    • For binary STL: ensure the header is exactly 80 bytes
+    • For ASCII STL: ensure "solid" / "endsolid" tags are present
+    • For OBJ: ensure face indices are 1-based (standard OBJ format)
+    • Max recommended size: 50,000 triangles for smooth performance
+
+  PROBLEM: Simulation produces NaN values
+  SOLUTION:
+    • Span must be > 0 m (minimum 1 m)
+    • Chord root must be > 0.1 m
+    • Mach must be between 0.05 and 3.0
+    • Check that tip chord < root chord
+
+  PROBLEM: Safety factor = Infinity
+  SOLUTION:
+    • Normal when simulation runs before any aerodynamic load is applied
+    • Run a full simulation (F5) to generate lift loads first
+
+  PROBLEM: npm start launches but window closes immediately
+  SOLUTION:
+    • Check electron-log output in %APPDATA%\travan-aero-simulator\logs\
+    • Ensure dist/ folder exists and contains index.html
+    • Set NODE_ENV=development and check console output
+
+  PROBLEM: Report modal shows "—" for all values
+  SOLUTION:
+    • Run a complete simulation first. The report requires results from
+      all three solvers (aero, FEA, mach). Press F5 for full run.
+
+  ── BUILD / PACKAGING ISSUES ──────────────────────────────────────────────
+
+  PROBLEM: electron-builder fails on Windows — "NSIS not found"
+  SOLUTION:
+    npm install --save-dev electron-builder@latest
+    # electron-builder bundles NSIS internally — ensure you're on v24+
+
+  PROBLEM: Code signing error on Windows
+  SOLUTION:
+    # Build without code signing:
+    npx electron-builder --win --publish never
+    # Or set in package.json build config:
+    "win": { "signingHashAlgorithms": null, "sign": null }
+
+  PROBLEM: dist-electron/ folder not created
+  SOLUTION:
+    • Must run npm run build BEFORE npm run dist
+    • Or use: npm run dist (it runs build automatically)
+
+  PROBLEM: Large installer size (>200 MB)
+  SOLUTION:
+    • This is normal — Electron bundles Chromium + Node.js
+    • Typical range: 120–160 MB for Electron 29
+    • Use electron-builder's compression: set "compression": "maximum"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. ENGINEERING REFERENCES & STANDARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  AERODYNAMICS:
+    [1]  Raymer, D.P. — Aircraft Design: A Conceptual Approach, 6th Ed.,
+         AIAA Education Series, 2018
+    [2]  Anderson, J.D. — Fundamentals of Aerodynamics, 6th Ed.,
+         McGraw-Hill, 2017
+    [3]  Abbott, I.H. & von Doenhoff, A.E. — Theory of Wing Sections,
+         Dover Publications, 1959
+    [4]  Küchemann, D. — The Aerodynamic Design of Aircraft,
+         Pergamon Press, 1978
+    [5]  Helmbold, H.B. — Der unverwundene Ellipsenflügel als tragende
+         Fläche, Jahrbuch der deutschen Luftfahrtforschung, 1942
+
+  STRUCTURES:
+    [6]  Megson, T.H.G. — Aircraft Structures for Engineering Students,
+         6th Ed., Butterworth-Heinemann, 2016
+    [7]  Niu, M.C.Y. — Airframe Structural Design, 2nd Ed.,
+         Conmilit Press, 1999
+    [8]  Bisplinghoff, R.L., Ashley, H. & Halfman, R.L. — Aeroelasticity,
+         Dover Publications, 1996
+
+  ATMOSPHERE:
+    [9]  ICAO Doc 7488-CD — Manual of the ICAO Standard Atmosphere, 3rd Ed.
+    [10] ISO 2533:1975 — Standard Atmosphere
+
+  COMPRESSIBLE FLOW:
+    [11] Anderson, J.D. — Modern Compressible Flow, 3rd Ed.,
+         McGraw-Hill, 2003
+    [12] Shapiro, A.H. — The Dynamics and Thermodynamics of Compressible
+         Fluid Flow, Ronald Press, 1953
+
+  REGULATIONS:
+    [13] FAR Part 25 — Airworthiness Standards: Transport Category Aircraft,
+         US FAA
+    [14] CS-25 — Certification Specifications for Large Aeroplanes,
+         EASA, Amendment 27
+    [15] MIL-HDBK-5J — Metallic Materials and Elements for Aerospace
+         Vehicle Structures, US DoD
+
+  SOFTWARE COMPONENTS:
+    React 18         — MIT Licence, Meta
+    Electron 29      — MIT Licence, OpenJS Foundation
+    Vite 5           — MIT Licence, Evan You
+    electron-builder — MIT Licence
+    electron-log     — MIT Licence
+    electron-store   — MIT Licence
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. LICENCE & CONTACT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Travan Aero Simulator v2.0
+  Copyright © 2025 Travan Engineering / RhoPhi Holdings
+
+  Author:  Dickson Tawiah Aman
+           BEng Aerospace Engineering (First Class Honours), KNUST Ghana
+           ENIC-verified UK RQF Level 6
+           Associate Member of the Royal Aeronautical Society (ARAeS)
+
+  All rights reserved.
+  This software is proprietary and confidential.
+  Unauthorised copying, distribution, or modification is prohibited.
+
+  DISCLAIMER:
+    Results generated by Travan Aero Simulator are produced using
+    analytical and semi-empirical engineering methods (vortex-lattice
+    panel method aerodynamics, Euler-Bernoulli beam FEA, ICAO ISA
+    atmosphere). They are indicative estimates suitable for conceptual
+    and preliminary design phases only.
+
+    BEFORE CERTIFICATION, results must be validated against:
+      • RANS or LES Computational Fluid Dynamics (OpenFOAM, ANSYS Fluent)
+      • Wind tunnel testing
+      • Full 3D Finite Element Analysis (NASTRAN, Abaqus, Calculix)
+      • Structural test articles per FAR Part 25 / EASA CS-25
+
+    This software is NOT approved for airworthiness certification
+    decisions. Use of simulation results in certified aircraft design
+    without independent validation is the sole responsibility of the user.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  END OF DOCUMENT   |   Travan Aero Simulator v2.0   |   ARAeS Edition
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

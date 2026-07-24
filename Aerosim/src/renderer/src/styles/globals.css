@@ -1,0 +1,241 @@
+/* ================================================================
+   Travan Aero Simulator v2.0 — Design System
+   Light + Dark mode, readable fonts, professional palette
+================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700&display=swap');
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --font-ui:      'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'Sora', 'Inter', sans-serif;
+
+  /* Base sizes */
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-md:   13px;
+  --text-lg:   15px;
+  --text-xl:   18px;
+  --text-2xl:  22px;
+
+  /* Radius */
+  --r-sm: 4px;
+  --r-md: 7px;
+  --r-lg: 12px;
+
+  /* Transitions */
+  --t-fast: 0.12s ease;
+  --t-mid:  0.22s ease;
+}
+
+/* ── DARK THEME (default) ───────────────────────────────────── */
+[data-theme="dark"], :root {
+  --bg-app:       #111318;
+  --bg-sidebar:   #0e1015;
+  --bg-panel:     #161a22;
+  --bg-card:      #1c2130;
+  --bg-input:     #0e1015;
+  --bg-hover:     #1e2535;
+  --bg-active:    #1a2540;
+  --bg-overlay:   rgba(8,10,18,0.88);
+
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-mid:    rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.18);
+  --border-accent: rgba(59,130,246,0.4);
+
+  --text-primary:   #f0f4ff;
+  --text-secondary: #9aaac4;
+  --text-muted:     #5a6680;
+  --text-disabled:  #3a4255;
+
+  --accent:         #3b82f6;   /* Blue — primary action */
+  --accent-light:   #60a5fa;
+  --accent-dim:     rgba(59,130,246,0.15);
+  --accent-glow:    0 0 16px rgba(59,130,246,0.35);
+
+  --green:          #22c55e;
+  --green-dim:      rgba(34,197,94,0.12);
+  --yellow:         #eab308;
+  --yellow-dim:     rgba(234,179,8,0.12);
+  --red:            #ef4444;
+  --red-dim:        rgba(239,68,68,0.12);
+  --violet:         #8b5cf6;
+  --teal:           #14b8a6;
+  --orange:         #f97316;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:   0 8px 30px rgba(0,0,0,0.6);
+
+  --viewport-bg: #0a0d12;
+  --grid-color:  rgba(255,255,255,0.04);
+}
+
+/* ── LIGHT THEME ─────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-app:       #f0f2f7;
+  --bg-sidebar:   #e4e8f0;
+  --bg-panel:     #ffffff;
+  --bg-card:      #f5f7fc;
+  --bg-input:     #eef0f6;
+  --bg-hover:     #e8ecf5;
+  --bg-active:    #dde4f5;
+  --bg-overlay:   rgba(240,242,247,0.92);
+
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-mid:    rgba(0,0,0,0.10);
+  --border-strong: rgba(0,0,0,0.18);
+  --border-accent: rgba(59,130,246,0.5);
+
+  --text-primary:   #0f172a;
+  --text-secondary: #334155;
+  --text-muted:     #64748b;
+  --text-disabled:  #94a3b8;
+
+  --accent:         #2563eb;
+  --accent-light:   #3b82f6;
+  --accent-dim:     rgba(37,99,235,0.10);
+  --accent-glow:    0 0 16px rgba(37,99,235,0.25);
+
+  --green:          #16a34a;
+  --green-dim:      rgba(22,163,74,0.10);
+  --yellow:         #ca8a04;
+  --yellow-dim:     rgba(202,138,4,0.10);
+  --red:            #dc2626;
+  --red-dim:        rgba(220,38,38,0.10);
+  --violet:         #7c3aed;
+  --teal:           #0d9488;
+  --orange:         #ea580c;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.10);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.12);
+  --shadow-lg:   0 8px 30px rgba(0,0,0,0.16);
+
+  --viewport-bg: #d8dde8;
+  --grid-color:  rgba(0,0,0,0.05);
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+html, body, #root {
+  width:100%; height:100%;
+  overflow:hidden;
+  background:var(--bg-app);
+  color:var(--text-primary);
+  font-family:var(--font-ui);
+  font-size:var(--text-md);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border-mid); border-radius:10px; }
+::-webkit-scrollbar-thumb:hover { background:var(--border-strong); }
+
+/* ── Inputs / Selects ───────────────────────────────────────── */
+input, select, textarea {
+  background:var(--bg-input);
+  border:1px solid var(--border-mid);
+  color:var(--text-primary);
+  border-radius:var(--r-sm);
+  font-family:var(--font-ui);
+  font-size:var(--text-sm);
+  outline:none;
+  transition:border-color var(--t-fast), box-shadow var(--t-fast);
+}
+input:focus, select:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px var(--accent-dim);
+}
+input[type="range"] {
+  -webkit-appearance:none;
+  width:100%; height:4px;
+  border:none;
+  background:var(--border-mid);
+  border-radius:2px;
+  cursor:pointer;
+  padding:0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:14px; height:14px;
+  background:var(--accent);
+  border-radius:50%;
+  box-shadow:0 0 0 2px var(--bg-panel), 0 0 6px var(--accent-dim);
+  cursor:pointer;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+button {
+  cursor:pointer; border:none; outline:none;
+  font-family:var(--font-ui);
+  font-size:var(--text-sm);
+  font-weight:500;
+  border-radius:var(--r-sm);
+  transition:all var(--t-fast);
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  white-space:nowrap;
+}
+button:disabled { opacity:0.4; cursor:not-allowed; }
+button:active:not(:disabled) { transform:scale(0.97); }
+
+/* Button variants */
+.btn-primary {
+  background:var(--accent); color:#fff;
+  padding:7px 14px;
+  box-shadow:var(--shadow-sm);
+}
+.btn-primary:hover:not(:disabled) { background:var(--accent-light); box-shadow:var(--accent-glow); }
+
+.btn-ghost {
+  background:transparent;
+  color:var(--text-secondary);
+  border:1px solid var(--border-mid);
+  padding:6px 12px;
+}
+.btn-ghost:hover:not(:disabled) { background:var(--bg-hover); color:var(--text-primary); border-color:var(--border-strong); }
+
+.btn-ghost.active, .btn-ghost[data-active="true"] {
+  background:var(--accent-dim);
+  color:var(--accent-light);
+  border-color:var(--border-accent);
+}
+
+.btn-icon {
+  background:transparent;
+  color:var(--text-muted);
+  width:30px; height:30px;
+  border-radius:var(--r-sm);
+  border:1px solid transparent;
+  padding:0; font-size:15px;
+}
+.btn-icon:hover { background:var(--bg-hover); color:var(--text-primary); border-color:var(--border-mid); }
+
+.btn-danger { background:var(--red); color:#fff; padding:7px 14px; }
+.btn-danger:hover { filter:brightness(1.1); }
+
+.btn-success { background:var(--green); color:#fff; padding:7px 14px; }
+.btn-success:hover { filter:brightness(1.1); }
+
+/* ── Canvas ─────────────────────────────────────────────────── */
+canvas { display:block; }
+.canvas-orbit { cursor:grab; }
+.canvas-orbit:active { cursor:grabbing; }
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes fadeIn   { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn  { from{transform:translateX(-8px);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes spin     { to{transform:rotate(360deg)} }
+@keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes shimmer  { 0%{background-position:200%} 100%{background-position:-200%} }
+@keyframes growBar  { from{width:0} to{width:var(--target-w,100%)} }
+
+.animate-fade-in  { animation:fadeIn  0.2s ease forwards; }
+.animate-slide-in { animation:slideIn 0.2s ease forwards; }
+.animate-spin     { animation:spin 1.2s linear infinite; }
+.animate-pulse    { animation:pulse 2s ease infinite; }

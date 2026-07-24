@@ -1,0 +1,10 @@
+TRAVAN AERO SIMULATOR v2.0
+Professional Aerospace Analysis Suite
+
+Copyright (c) 2025 Travan Engineering / RhoPhi Holdings
+Author: Dickson Tawiah Aman, BEng (Aerospace), ARAeS
+
+All rights reserved. This software is proprietary and confidential.
+Unauthorised copying, distribution, or modification is prohibited.
+
+For licensing enquiries: travan@rhophi.engineering
